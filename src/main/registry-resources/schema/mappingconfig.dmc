@@ -1,0 +1,17 @@
+map_S_root_S_data = function () {
+  var outputdata = {};
+  var count_i = 1;
+  outputdata.items = [];
+
+  for (var i = 1; i < inputroot.length; i++) {
+    var currentItem = {};
+    currentItem.Code = inputroot[i].Code;
+    currentItem.Wert = inputroot[i].Wert;
+    currentItem.Beschreibung = inputroot[i].Beschreibung;
+
+    outputdata.items.push(currentItem);
+    count_i++;
+  }
+
+  return outputdata;
+};

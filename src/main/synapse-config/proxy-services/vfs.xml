@@ -1,0 +1,120 @@
+<proxy xmlns="http://ws.apache.org/ns/synapse" name="vfs-proxy" transports="vfs">
+    <parameter name="transport.vfs.FileURI">file:///data/IN</parameter>        
+    <parameter name="transport.vfs.ContentType">text/plain</parameter>
+    <parameter name="transport.vfs.FileNamePattern">.*\.csv</parameter>
+    <parameter name="transport.PollInterval">5</parameter>
+    <parameter name="transport.vfs.Streaming">true</parameter>
+    <parameter name="transport.vfs.MoveAfterProcess">file:///data/IN/archive</parameter>            
+    <parameter name="transport.vfs.MoveAfterFailure">file:///data/IN/fail</parameter>          
+    <parameter name="transport.vfs.ActionAfterProcess">MOVE</parameter>
+    <parameter name="transport.vfs.ActionAfterFailure">MOVE</parameter>
+    <target>
+         <inSequence>
+            <property name="filename" expression="get-property('transport','FILE_NAME')" />
+            <property name="filename" expression="fn:concat(fn:substring-before($ctx:filename, '.csv'), '.xml')" />
+            <property name="transport.vfs.ReplyFileName" expression="$ctx:filename" scope="transport"/>
+
+            <!-- For what is that?
+            <property action="set" name="OUT_ONLY" value="true"/>
+            <property name="ClientApiNonBlocking" value="true" scope="axis2" action="remove"/>
+            -->
+
+            <datamapper config="gov:datamapper/schema/mappingconfig.dmc" inputSchema="gov:datamapper/schema/mappingconfig_inputSchema.json" inputType="CSV" outputSchema="gov:datamapper/schema/mappingconfig_outputSchema.json" outputType="XML"/>
+            
+            <!-- Dev purpose 
+            <send>
+                <endpoint>
+                    <address uri="vfs:file:///data/OUT"/> 
+                </endpoint>
+            </send>
+            -->
+
+            <property name="InputCode" expression="$body//items/Code" />
+            <property name="InputValue" expression="$body//items/Wert" />
+            <property name="InputDescription" expression="$body//items/Beschreibung" />
+
+            <!-- LOOKUP DB -->
+
+            <!-- Make the call -->
+            <dblookup>
+                <connection>
+                    <pool>
+                        <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
+                        <url>jdbc:sqlserver://172.25.208.1:1444;databaseName=mi_dataservice</url>
+                        <user>sa</user>
+                        <password>Flash8.2</password>
+                    </pool>
+                </connection>
+                <statement>
+                    <sql><![CDATA[SELECT code, value, description FROM taxcodes WHERE code=?]]></sql>
+                    <result column="code" name="code"/>
+                    <result column="value" name="value"/>
+                    <result column="description" name="description"/>
+                    <parameter expression="get-property('InputCode')" type="CHAR"/>
+                </statement>
+            </dblookup>
+
+            <log level="custom">
+            <property name="ResponseCode" expression="get-property('code')"/>
+            <property name="ResponseValue" expression="get-property('value')"/>
+            <property name="ResponseDescription" expression="get-property('description')"/>
+            </log>
+            <filter source="get-property('ResponseCode')" regex="null"> 
+                <then>
+                    <log level="custom">
+                        <property name="Message" value="ResponseCode is empty, calling createTaxcodes service" />
+                    </log>
+                    <!-- Send mediator when ResponseCode is empty -->
+                    <dbreport>
+                        <connection>
+                            <pool>
+                                <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
+                                <url>jdbc:sqlserver://172.25.208.1:1444;databaseName=mi_dataservice</url>
+                                <user>sa</user>
+                                <password>Flash8.2</password>
+                            </pool>
+                        </connection>
+                        <statement>
+                            <sql><![CDATA[INSERT INTO taxcodes (code, value, description, createtimestamp) VALUES (?, ?, ?, GETUTCDATE())]]></sql>
+                            <parameter expression="get-property('InputCode')" type="CHAR"/>
+                            <parameter expression="get-property('InputValue')" type="NUMERIC"/>
+                            <parameter expression="get-property('InputDescription')" type="VARCHAR"/>
+                        </statement>
+                    </dbreport>
+                </then>
+                <else>
+                    <filter xpath="get-property('InputValue') != get-property('ResponseValue')">
+                        <then>
+                            <log level="custom">
+                                <property name="Message" value="Responsevalue is not equel InputValue, calling update service" />
+                            </log>
+                            <!-- Send mediator when InputValue is not equal to ResponseValue -->
+                            <dbreport>
+                                <connection>
+                                    <pool>
+                                        <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
+                                        <url>jdbc:sqlserver://172.25.208.1:1444;databaseName=mi_dataservice</url>
+                                        <user>sa</user>
+                                        <password>Flash8.2</password>
+                                    </pool>
+                                </connection>
+                                <statement>
+                                    <sql><![CDATA[UPDATE taxcodes SET value = ?, description = ?, changetimestamp = GETUTCDATE() WHERE code = ?]]></sql>
+                                    <parameter expression="get-property('InputCode')" type="CHAR"/>
+                                    <parameter expression="get-property('InputValue')" type="NUMERIC"/>
+                                    <parameter expression="get-property('InputDescription')" type="VARCHAR"/>
+                                </statement>
+                            </dbreport>
+                        </then>
+                        <else>
+                            <log level="custom">
+                                <property name="Message" value="do nothing" />
+                            </log>
+                            <!-- Do nothing when ResponsePayload is not empty and InputValue is equal to ResponseValue -->
+                        </else>
+                    </filter>
+                </else>
+            </filter>
+        </inSequence>
+    </target>
+</proxy>

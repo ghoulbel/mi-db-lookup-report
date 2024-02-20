@@ -1,0 +1,28 @@
+GET http://localhost:8080/services/Dataservice
+SOAPAction: LookupTaxcodes
+GET http://localhost:8080/services/Dataservice/taxcodes/lookup/R
+
+GET http://localhost:8080/services/Dataservice/taxcodes/updateTaxcodes/U/5.66/blubb
+
+GET http://localhost:8080/services/Dataservice/taxcodes/createTaxcodes/y/8.48/des
+
+
+
+            <!-- Log the request before making the call -->
+            <log level="full">
+                <property name="Request" expression="get-property('axis2', 'HTTP_METHOD')"/>
+                <property name="Endpoint" value="http://localhost:8080/services/Dataservice/taxcodes/lookup/{uri.var.code}"/>
+            </log>
+
+            <!-- Make the call -->
+            <call>
+                <endpoint>
+                    <http method="GET" uri-template="http://localhost:8080/services/Dataservice/taxcodes/lookup/{uri.var.code}" />
+                </endpoint>
+            </call>
+
+            <!-- Log the response after the call -->
+            <log level="full">
+                <property name="Response" expression="get-property('axis2', 'HTTP_SC')"/>
+                <property name="ResponsePayload" expression="$body"/>
+            </log>

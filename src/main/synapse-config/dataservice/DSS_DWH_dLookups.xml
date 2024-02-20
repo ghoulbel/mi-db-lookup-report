@@ -1,0 +1,61 @@
+<data name="Dataservice" transports="http https local">
+   <config id="default">
+      <property name="driverClassName">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
+      <property name="url">jdbc:sqlserver://172.25.208.1:1444;databaseName=mi_dataservice</property>
+      <property name="username">sa</property>
+      <property name="password">Flash8.2</property>
+   </config>
+
+   <query id="LookupTaxcodes" useConfig="default">
+      <sql>SELECT code,value FROM taxcodes WHERE code=:code</sql>
+      <result element="lookup" rowName="lookup">
+         <element name="code" column="code" />
+         <element name="value" column="value" />
+      </result>
+      <param name="code" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="1">
+      </param>
+   </query>
+   <!-- 
+   <operation name="TaxcodesByCode">
+      <call-query href="LookupTaxcodes">
+         <with-param name="code" query-param="code" />
+      </call-query>
+   </operation>
+   -->
+   <resource path="taxcodes/lookup/{code}" method="GET">
+      <call-query href="LookupTaxcodes">
+         <with-param name="code" query-param="code" />
+      </call-query>
+   </resource>
+
+   <query id="updateTaxcodes" useConfig="default">
+      <sql>UPDATE taxcodes SET value = ?, description = ?, changetimestamp = GETUTCDATE() WHERE code
+         = ?</sql>
+      <param name="value" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="1" />
+      <param name="description" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="2" />
+      <param name="code" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="3" />
+   </query>
+   <resource path="taxcodes/updateTaxcodes/{code}/{value}/{description}" method="GET">
+      <call-query href="updateTaxcodes">
+         <with-param name="code" query-param="code" />
+         <with-param name="value" query-param="value" />
+         <with-param name="description" query-param="description" />
+      </call-query>
+   </resource>
+
+   <query id="createTaxcodes" useConfig="default">
+      <sql>INSERT INTO taxcodes (code, value, description, createtimestamp) VALUES (?, ?, ?,
+         GETUTCDATE())</sql>
+      <param name="code" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="1" />
+      <param name="value" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="2" />
+      <param name="description" paramType="SCALAR" sqlType="STRING" type="IN" ordinal="3" />
+   </query>
+   <resource path="taxcodes/createTaxcodes/{code}/{value}/{description}" method="GET">
+      <call-query href="createTaxcodes">
+         <with-param name="code" query-param="code" />
+         <with-param name="value" query-param="value" />
+         <with-param name="description" query-param="description" />
+      </call-query>
+   </resource>
+
+</data>
