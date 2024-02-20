@@ -23,10 +23,7 @@
             <dbreport>
                 <connection>
                     <pool>
-                        <driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver>
-                        <url>jdbc:sqlserver://192.168.32.1:1444;databaseName=mi_dataservice</url>
-                        <user>readonly</user>
-                        <password>Flash8.2</password>
+                        <dsName>jdbc/BZ_DBReport_DS</dsName>
                     </pool>
                 </connection>
                 <statement>

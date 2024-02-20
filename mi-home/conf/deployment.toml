@@ -18,6 +18,9 @@ synapse.enable_xpath_dom_failover = true
 "JWT_Token" = "eyJ[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+"
 "Basic_Auth" = "Authorization: Basic [a-zA-Z0-9+/]+={0,2}"
 
-[secrets]
-username = "[sa]"
-password = "[Flash8.2]"
+[[datasource]]
+id = "BZ_DBReport_DS"
+url = "jdbc:sqlserver://192.168.32.1:1444;databaseName=mi_dataservice"
+username = "readonly"
+password = "Flash8.2"
+driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
